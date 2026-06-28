@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>나만의 동화 만들기 ✨</title>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet" />
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -329,44 +328,6 @@
       display: none;
     }
 
-    /* ── PDF hidden render area ── */
-    #pdfContent {
-      position: absolute;
-      left: -9999px;
-      top: 0;
-      width: 800px;
-      background: #fff;
-      padding: 48px 56px;
-      font-family: 'Noto Sans KR', sans-serif;
-      color: #1a1a2e;
-    }
-    #pdfContent .pdf-main-title {
-      font-size: 2rem;
-      font-weight: 900;
-      color: #6a5acd;
-      text-align: center;
-      margin-bottom: 40px;
-      line-height: 1.3;
-      padding-bottom: 20px;
-      border-bottom: 3px solid #6a5acd;
-    }
-    #pdfContent .pdf-chapter-title {
-      font-size: 1.2rem;
-      font-weight: 700;
-      color: #6a5acd;
-      margin: 28px 0 12px;
-    }
-    #pdfContent .pdf-chapter-body {
-      font-size: 0.95rem;
-      line-height: 1.9;
-      color: #333;
-      white-space: pre-wrap;
-    }
-    #pdfContent .pdf-divider {
-      border: none;
-      border-top: 1px solid #e0d7ff;
-      margin: 24px 0;
-    }
 
     @media (max-width: 600px) {
       .app-header h1 { font-size: 1.5rem; }
@@ -491,8 +452,6 @@
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
-<!-- Hidden PDF render area -->
-<div id="pdfContent"></div>
 
 <script>
 // ──────────────────────────────────────────────
@@ -819,70 +778,62 @@ function goBack() {
 // ──────────────────────────────────────────────
 //  PDF Save
 // ──────────────────────────────────────────────
-async function savePDF() {
+function savePDF() {
   const pdfBtn = document.getElementById('pdfBtn');
   pdfBtn.disabled = true;
   pdfBtn.textContent = '📄 PDF 만드는 중...';
 
   try {
-    // Build hidden render area
-    const pdfArea = document.getElementById('pdfContent');
-    let html = `<div class="pdf-main-title">${escapeHtml(state.title)}</div>`;
-    state.chapters.forEach((ch, i) => {
-      html += `<div class="pdf-chapter-title">챕터 ${i+1}: ${escapeHtml(ch.title)}</div>`;
-      html += `<div class="pdf-chapter-body">${escapeHtml(ch.body)}</div>`;
-      if (i < state.chapters.length - 1) html += '<hr class="pdf-divider" />';
-    });
-    pdfArea.innerHTML = html;
-
     const { jsPDF } = window.jspdf;
     const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
 
     const pageW = pdf.internal.pageSize.getWidth();
     const pageH = pdf.internal.pageSize.getHeight();
-    const margin = 15;
-    const contentW = pageW - margin * 2;
+    const margin = 18;
+    const maxW = pageW - margin * 2;
+    let y = margin;
 
-    // Render to canvas in chunks (html2canvas)
-    const canvas = await html2canvas(pdfArea, {
-      scale: 2,
-      useCORS: true,
-      backgroundColor: '#ffffff',
-      width: 800,
-      windowWidth: 800
-    });
-
-    const imgData = canvas.toDataURL('image/jpeg', 0.92);
-    const imgW = contentW;
-    const imgH = (canvas.height * imgW) / canvas.width;
-
-    let yOffset = 0;
-    let remainingH = imgH;
-    let isFirstPage = true;
-
-    while (remainingH > 0) {
-      if (!isFirstPage) pdf.addPage();
-      const availH = pageH - margin * 2;
-      const sliceH = Math.min(availH, remainingH);
-
-      // Calculate source rect in canvas pixels
-      const srcY = (yOffset / imgH) * canvas.height;
-      const srcH = (sliceH / imgH) * canvas.height;
-
-      // Create slice canvas
-      const sliceCanvas = document.createElement('canvas');
-      sliceCanvas.width = canvas.width;
-      sliceCanvas.height = srcH;
-      const ctx = sliceCanvas.getContext('2d');
-      ctx.drawImage(canvas, 0, srcY, canvas.width, srcH, 0, 0, canvas.width, srcH);
-      const sliceData = sliceCanvas.toDataURL('image/jpeg', 0.92);
-
-      pdf.addImage(sliceData, 'JPEG', margin, margin, imgW, sliceH);
-
-      yOffset += sliceH;
-      remainingH -= sliceH;
-      isFirstPage = false;
+    function checkPage(neededH) {
+      if (y + neededH > pageH - margin) { pdf.addPage(); y = margin; }
     }
+
+    function addText(text, fontSize, isBold, color, lineGap) {
+      pdf.setFontSize(fontSize);
+      pdf.setFont('helvetica', isBold ? 'bold' : 'normal');
+      pdf.setTextColor(...color);
+      const lines = pdf.splitTextToSize(text, maxW);
+      lines.forEach(line => {
+        checkPage(fontSize * 0.4);
+        pdf.text(line, margin, y);
+        y += fontSize * 0.4;
+      });
+      y += lineGap || 0;
+    }
+
+    // Title
+    addText(state.title, 22, true, [106, 90, 205], 8);
+
+    // Divider
+    checkPage(4);
+    pdf.setDrawColor(106, 90, 205);
+    pdf.setLineWidth(0.5);
+    pdf.line(margin, y, pageW - margin, y);
+    y += 8;
+
+    // Chapters
+    state.chapters.forEach((ch, i) => {
+      checkPage(10);
+      addText(`챕터 ${i + 1}: ${ch.title}`, 14, true, [106, 90, 205], 4);
+      addText(ch.body, 11, false, [50, 50, 60], 10);
+
+      if (i < state.chapters.length - 1) {
+        checkPage(6);
+        pdf.setDrawColor(200, 200, 220);
+        pdf.setLineWidth(0.3);
+        pdf.line(margin, y, pageW - margin, y);
+        y += 6;
+      }
+    });
 
     const fileName = state.title.replace(/\s+/g, '_').replace(/[^\w가-힣_]/g, '') + '.pdf';
     pdf.save(fileName);
@@ -897,13 +848,6 @@ async function savePDF() {
   }
 }
 
-function escapeHtml(str) {
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
 </script>
 </body>
 </html>
