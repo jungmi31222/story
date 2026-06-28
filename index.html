@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>나만의 동화 만들기 ✨</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+      font-size: 16px;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #c9e8ff 0%, #e8d5ff 50%, #ffd6e8 100%);
+      color: #2d2d4e;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 24px 16px 80px;
+    }
+
+    /* ── Header ── */
+    .app-header {
+      text-align: center;
+      padding: 32px 0 24px;
+    }
+    .app-header .icon { font-size: 48px; display: block; margin-bottom: 8px; }
+    .app-header h1 {
+      font-size: 2rem;
+      font-weight: 900;
+      background: linear-gradient(135deg, #6a5acd, #d63384);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .app-header p { margin-top: 8px; color: #666; font-size: 0.95rem; }
+
+    /* ── Card ── */
+    .card {
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      padding: 28px 24px;
+      margin-bottom: 20px;
+      box-shadow: 0 8px 32px rgba(106, 90, 205, 0.12);
+    }
+    .card-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #6a5acd;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* ── Form ── */
+    .field { margin-bottom: 18px; }
+    .field label {
+      display: block;
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: #4a4a6a;
+      margin-bottom: 6px;
+    }
+    .field .hint { font-size: 0.78rem; color: #888; font-weight: 400; margin-left: 4px; }
+
+    .input-wrap { position: relative; }
+    input[type="text"],
+    input[type="password"] {
+      width: 100%;
+      padding: 12px 16px;
+      border: 2px solid #ddd;
+      border-radius: 12px;
+      font-family: inherit;
+      font-size: 1rem;
+      color: #2d2d4e;
+      background: #fff;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      outline: none;
+    }
+    input[type="text"]:focus,
+    input[type="password"]:focus {
+      border-color: #6a5acd;
+      box-shadow: 0 0 0 3px rgba(106, 90, 205, 0.15);
+    }
+    .toggle-pw {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 18px;
+      padding: 4px;
+      color: #888;
+      transition: color 0.2s;
+    }
+    .toggle-pw:hover { color: #6a5acd; }
+
+    /* ── Chip Buttons ── */
+    .chip-group { display: flex; flex-wrap: wrap; gap: 8px; }
+    .chip {
+      padding: 8px 16px;
+      border: 2px solid #ddd;
+      border-radius: 24px;
+      background: #fff;
+      font-family: inherit;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      color: #4a4a6a;
+      font-weight: 500;
+    }
+    .chip:hover { border-color: #6a5acd; color: #6a5acd; }
+    .chip.selected {
+      border-color: #6a5acd;
+      background: linear-gradient(135deg, #6a5acd, #9b59b6);
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(106, 90, 205, 0.35);
+    }
+
+    /* ── Primary Button ── */
+    .btn-primary {
+      width: 100%;
+      padding: 16px;
+      background: linear-gradient(135deg, #6a5acd, #d63384);
+      color: #fff;
+      border: none;
+      border-radius: 16px;
+      font-family: inherit;
+      font-size: 1.15rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.2s, opacity 0.2s;
+      box-shadow: 0 6px 20px rgba(106, 90, 205, 0.4);
+      margin-top: 8px;
+    }
+    .btn-primary:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 28px rgba(106, 90, 205, 0.5);
+    }
+    .btn-primary:active:not(:disabled) { transform: translateY(0); }
+    .btn-primary:disabled { opacity: 0.55; cursor: not-allowed; }
+
+    /* ── Secondary Button ── */
+    .btn-secondary {
+      padding: 10px 20px;
+      background: #fff;
+      color: #6a5acd;
+      border: 2px solid #6a5acd;
+      border-radius: 12px;
+      font-family: inherit;
+      font-size: 0.9rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-secondary:hover:not(:disabled) {
+      background: #6a5acd;
+      color: #fff;
+    }
+    .btn-secondary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* ── Loading ── */
+    #loadingScreen {
+      display: none;
+      text-align: center;
+      padding: 60px 20px;
+    }
+    .spinner {
+      width: 64px;
+      height: 64px;
+      border: 5px solid #e0d7ff;
+      border-top-color: #6a5acd;
+      border-radius: 50%;
+      animation: spin 0.9s linear infinite;
+      margin: 0 auto 24px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-text { font-size: 1.2rem; font-weight: 700; color: #6a5acd; }
+    .loading-sub { margin-top: 8px; color: #888; font-size: 0.9rem; }
+    .dots::after {
+      content: '';
+      animation: dots 1.4s steps(4, end) infinite;
+    }
+    @keyframes dots {
+      0%   { content: ''; }
+      25%  { content: '.'; }
+      50%  { content: '..'; }
+      75%  { content: '...'; }
+      100% { content: ''; }
+    }
+
+    /* ── Story Result ── */
+    #resultScreen { display: none; }
+
+    .story-title-display {
+      text-align: center;
+      font-size: 1.8rem;
+      font-weight: 900;
+      color: #6a5acd;
+      margin-bottom: 24px;
+      line-height: 1.3;
+    }
+
+    .chapter-card {
+      background: rgba(255, 255, 255, 0.9);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 16px;
+      box-shadow: 0 4px 16px rgba(106, 90, 205, 0.1);
+      border-left: 4px solid #6a5acd;
+    }
+    .chapter-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .chapter-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #6a5acd;
+    }
+    .chapter-body {
+      font-size: 1rem;
+      line-height: 1.85;
+      color: #333;
+      white-space: pre-wrap;
+    }
+    .chapter-regenerating {
+      text-align: center;
+      padding: 20px;
+      color: #6a5acd;
+      font-weight: 700;
+    }
+
+    /* ── Action Bar ── */
+    .action-bar {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 24px;
+    }
+    .action-bar .btn-secondary { flex: 1; min-width: 140px; }
+
+    /* ── PDF fixed button ── */
+    .pdf-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(255,255,255,0.9);
+      backdrop-filter: blur(10px);
+      padding: 12px 16px;
+      box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
+      display: none;
+      z-index: 100;
+    }
+    .pdf-bar-inner {
+      max-width: 800px;
+      margin: 0 auto;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+    #pdfBtn {
+      flex: 1;
+      padding: 14px;
+      background: linear-gradient(135deg, #f7971e, #ffd200);
+      color: #2d2d4e;
+      border: none;
+      border-radius: 14px;
+      font-family: inherit;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.2s;
+      box-shadow: 0 4px 16px rgba(247, 151, 30, 0.4);
+    }
+    #pdfBtn:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(247, 151, 30, 0.5);
+    }
+    #pdfBtn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+    /* ── Toast / Error ── */
+    .toast {
+      position: fixed;
+      bottom: 88px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: #2d2d4e;
+      color: #fff;
+      padding: 12px 24px;
+      border-radius: 24px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      opacity: 0;
+      transition: opacity 0.3s, transform 0.3s;
+      pointer-events: none;
+      white-space: nowrap;
+      z-index: 200;
+    }
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+    .toast.error { background: #e74c3c; }
+    .toast.success { background: #27ae60; }
+
+    /* ── Error inline ── */
+    .error-box {
+      background: #fff0f0;
+      border: 2px solid #f5c6cb;
+      border-radius: 12px;
+      padding: 14px 18px;
+      color: #721c24;
+      font-size: 0.95rem;
+      margin-top: 12px;
+      display: none;
+    }
+
+    /* ── PDF hidden render area ── */
+    #pdfContent {
+      position: absolute;
+      left: -9999px;
+      top: 0;
+      width: 800px;
+      background: #fff;
+      padding: 48px 56px;
+      font-family: 'Noto Sans KR', sans-serif;
+      color: #1a1a2e;
+    }
+    #pdfContent .pdf-main-title {
+      font-size: 2rem;
+      font-weight: 900;
+      color: #6a5acd;
+      text-align: center;
+      margin-bottom: 40px;
+      line-height: 1.3;
+      padding-bottom: 20px;
+      border-bottom: 3px solid #6a5acd;
+    }
+    #pdfContent .pdf-chapter-title {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #6a5acd;
+      margin: 28px 0 12px;
+    }
+    #pdfContent .pdf-chapter-body {
+      font-size: 0.95rem;
+      line-height: 1.9;
+      color: #333;
+      white-space: pre-wrap;
+    }
+    #pdfContent .pdf-divider {
+      border: none;
+      border-top: 1px solid #e0d7ff;
+      margin: 24px 0;
+    }
+
+    @media (max-width: 600px) {
+      .app-header h1 { font-size: 1.5rem; }
+      .card { padding: 20px 16px; }
+      .chapter-header { flex-direction: column; }
+      .chapter-header .btn-secondary { width: 100%; }
+      .action-bar { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Header -->
+  <header class="app-header">
+    <span class="icon">📖</span>
+    <h1>나만의 동화 만들기</h1>
+    <p>AI와 함께 나만의 특별한 동화를 만들어 보세요 ✨</p>
+  </header>
+
+  <!-- ── STEP 1: Setup Form ── -->
+  <div id="setupScreen">
+
+    <!-- API Key -->
+    <div class="card">
+      <div class="card-title">🔑 Gemini API 키</div>
+      <div class="field">
+        <label for="apiKey">API 키 <span class="hint">(Google AI Studio에서 발급)</span></label>
+        <div class="input-wrap">
+          <input type="password" id="apiKey" placeholder="AIza..." autocomplete="off" />
+          <button class="toggle-pw" id="togglePw" type="button" aria-label="API 키 표시/숨김">👁️</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Story Settings -->
+    <div class="card">
+      <div class="card-title">✏️ 동화 설정</div>
+
+      <div class="field">
+        <label for="storyTitle">동화 제목</label>
+        <input type="text" id="storyTitle" placeholder="용감한 토끼의 모험" />
+      </div>
+
+      <div class="field">
+        <label for="protagonist">주인공 이름 및 특징</label>
+        <input type="text" id="protagonist" placeholder="루나 - 마법을 쓸 줄 아는 소녀" />
+      </div>
+
+      <div class="field">
+        <label for="supporting">조연 캐릭터 <span class="hint">(선택)</span></label>
+        <input type="text" id="supporting" placeholder="말하는 여우 친구 시로" />
+      </div>
+
+      <div class="field">
+        <label for="setting">배경 / 세계관</label>
+        <input type="text" id="setting" placeholder="구름 위에 떠 있는 마법 왕국" />
+      </div>
+
+      <div class="field">
+        <label for="theme">이야기 주제 / 교훈</label>
+        <input type="text" id="theme" placeholder="용기와 우정" />
+      </div>
+    </div>
+
+    <!-- Mood -->
+    <div class="card">
+      <div class="card-title">🌈 분위기 선택</div>
+      <div class="chip-group" id="moodGroup">
+        <button class="chip" data-value="따뜻하고 밝은">🌞 따뜻하고 밝은</button>
+        <button class="chip" data-value="신비롭고 몽환적인">🌙 신비롭고 몽환적인</button>
+        <button class="chip" data-value="긴장감 있는 모험">⚡ 긴장감 있는 모험</button>
+        <button class="chip" data-value="유머러스한">😄 유머러스한</button>
+      </div>
+    </div>
+
+    <!-- Chapter count -->
+    <div class="card">
+      <div class="card-title">📚 챕터 수</div>
+      <div class="chip-group" id="chapterGroup">
+        <button class="chip" data-value="3">3챕터</button>
+        <button class="chip selected" data-value="4">4챕터</button>
+        <button class="chip" data-value="5">5챕터</button>
+      </div>
+    </div>
+
+    <div id="setupError" class="error-box"></div>
+
+    <button class="btn-primary" id="startBtn" onclick="startGeneration()">
+      ✨ 동화 만들기 시작
+    </button>
+
+  </div><!-- /setupScreen -->
+
+  <!-- ── STEP 2: Loading ── -->
+  <div id="loadingScreen">
+    <div class="spinner"></div>
+    <div class="loading-text">동화를 쓰고 있어요<span class="dots"></span> ✨</div>
+    <div class="loading-sub">AI가 멋진 이야기를 만들고 있어요. 잠시만 기다려 주세요!</div>
+  </div>
+
+  <!-- ── STEP 3: Result ── -->
+  <div id="resultScreen">
+    <div class="story-title-display" id="displayTitle"></div>
+    <div id="chaptersContainer"></div>
+
+    <div class="action-bar">
+      <button class="btn-secondary" onclick="resetAll()">🔄 전체 다시 만들기</button>
+      <button class="btn-secondary" onclick="goBack()">⬅️ 설정으로 돌아가기</button>
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<!-- PDF fixed bar -->
+<div class="pdf-bar" id="pdfBar">
+  <div class="pdf-bar-inner">
+    <button id="pdfBtn" onclick="savePDF()">📄 PDF로 저장하기</button>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Hidden PDF render area -->
+<div id="pdfContent"></div>
+
+<script>
+// ──────────────────────────────────────────────
+//  State (memory only – never persisted)
+// ──────────────────────────────────────────────
+const state = {
+  apiKey: '',
+  title: '',
+  protagonist: '',
+  supporting: '',
+  setting: '',
+  theme: '',
+  mood: '',
+  chapterCount: 4,
+  chapters: []   // [{title, body}]
+};
+
+// ── Chip selectors ──
+function initChips() {
+  document.querySelectorAll('.chip-group').forEach(group => {
+    group.querySelectorAll('.chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        group.querySelectorAll('.chip').forEach(c => c.classList.remove('selected'));
+        chip.classList.add('selected');
+      });
+    });
+  });
+}
+initChips();
+
+// ── Toggle password ──
+document.getElementById('togglePw').addEventListener('click', () => {
+  const inp = document.getElementById('apiKey');
+  const btn = document.getElementById('togglePw');
+  if (inp.type === 'password') { inp.type = 'text'; btn.textContent = '🙈'; }
+  else { inp.type = 'password'; btn.textContent = '👁️'; }
+});
+
+// ── Toast ──
+function showToast(msg, type = '') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (type ? ' ' + type : '');
+  setTimeout(() => { t.className = 'toast'; }, 3000);
+}
+
+function showError(msg) {
+  const box = document.getElementById('setupError');
+  box.textContent = msg;
+  box.style.display = 'block';
+}
+function clearError() {
+  const box = document.getElementById('setupError');
+  box.style.display = 'none';
+}
+
+// ── Screen transitions ──
+function showScreen(name) {
+  document.getElementById('setupScreen').style.display = 'none';
+  document.getElementById('loadingScreen').style.display = 'none';
+  document.getElementById('resultScreen').style.display = 'none';
+  document.getElementById('pdfBar').style.display = 'none';
+
+  if (name === 'setup') {
+    document.getElementById('setupScreen').style.display = 'block';
+  } else if (name === 'loading') {
+    document.getElementById('loadingScreen').style.display = 'block';
+  } else if (name === 'result') {
+    document.getElementById('resultScreen').style.display = 'block';
+    document.getElementById('pdfBar').style.display = 'block';
+  }
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ── Validation ──
+function validate() {
+  clearError();
+  const apiKey = document.getElementById('apiKey').value.trim();
+  const title  = document.getElementById('storyTitle').value.trim();
+  const prot   = document.getElementById('protagonist').value.trim();
+  const settingV = document.getElementById('setting').value.trim();
+  const themeV = document.getElementById('theme').value.trim();
+  const mood   = document.querySelector('#moodGroup .chip.selected');
+  const chap   = document.querySelector('#chapterGroup .chip.selected');
+
+  if (!apiKey)   { showError('API 키를 입력해봐요 🔑'); return false; }
+  if (!title)    { showError('동화 제목을 입력해봐요 📝'); return false; }
+  if (!prot)     { showError('주인공을 소개해봐요 🦸'); return false; }
+  if (!settingV) { showError('배경/세계관을 입력해봐요 🌍'); return false; }
+  if (!themeV)   { showError('주제/교훈을 입력해봐요 💡'); return false; }
+  if (!mood)     { showError('분위기를 선택해봐요 🎨'); return false; }
+
+  state.apiKey      = apiKey;
+  state.title       = title;
+  state.protagonist = prot;
+  state.supporting  = document.getElementById('supporting').value.trim() || '없음';
+  state.setting     = settingV;
+  state.theme       = themeV;
+  state.mood        = mood.dataset.value;
+  state.chapterCount = parseInt(chap ? chap.dataset.value : '4');
+  return true;
+}
+
+// ──────────────────────────────────────────────
+//  Gemini API
+// ──────────────────────────────────────────────
+const SYSTEM_PROMPT = `너는 초등학생을 위한 동화 작가야.
+항상 어린이가 이해할 수 있는 쉬운 언어로, 따뜻하고 긍정적인 이야기를 써줘.
+폭력적이거나 무서운 내용, 어른 주제는 절대 포함하지 마.
+각 챕터는 "## 챕터 N: [챕터 제목]" 형식으로 시작해.`;
+
+function buildPrompt() {
+  const n = state.chapterCount;
+  return `다음 정보를 바탕으로 ${n}챕터짜리 동화를 한국어로 써줘.
+
+- 제목: ${state.title}
+- 주인공: ${state.protagonist}
+- 조연: ${state.supporting}
+- 배경: ${state.setting}
+- 주제/교훈: ${state.theme}
+- 분위기: ${state.mood}
+
+각 챕터는 최소 300자 이상으로 써줘.
+챕터 구조:
+- 챕터 1: 도입 (주인공 소개, 배경 설명)
+- 챕터 2~${n-1}: 전개와 갈등 (문제 발생, 모험, 위기)
+- 챕터 ${n}: 결말 (문제 해결, 교훈)
+
+형식:
+## 챕터 1: [제목]
+[본문]
+
+## 챕터 2: [제목]
+[본문]
+...`;
+}
+
+function buildRegenPrompt(chapterIndex) {
+  const n = state.chapterCount;
+  const idx = chapterIndex + 1;
+  const contextSummary = state.chapters
+    .map((c, i) => i !== chapterIndex ? `챕터 ${i+1} "${c.title}": ${c.body.slice(0, 100)}...` : null)
+    .filter(Boolean)
+    .join('\n');
+
+  return `위 동화의 챕터 ${idx}만 다시 써줘. 다른 챕터 내용과 자연스럽게 이어지도록 해줘.
+전체 동화 맥락:
+${contextSummary}
+
+원래 동화 정보:
+- 제목: ${state.title}
+- 주인공: ${state.protagonist}
+- 조연: ${state.supporting}
+- 배경: ${state.setting}
+- 주제/교훈: ${state.theme}
+- 분위기: ${state.mood}
+
+챕터 ${idx}만 "## 챕터 ${idx}: [제목]" 형식으로 시작해서 써줘. 최소 300자 이상.`;
+}
+
+async function callGemini(prompt) {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${state.apiKey}`;
+  const body = {
+    system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
+    contents: [{ role: 'user', parts: [{ text: prompt }] }]
+  };
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    const status = res.status;
+    if (status === 400 || status === 403) throw new Error('api_key');
+    throw new Error('network');
+  }
+
+  const data = await res.json();
+  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!text) throw new Error('empty');
+  return text;
+}
+
+// ──────────────────────────────────────────────
+//  Parse chapters from markdown
+// ──────────────────────────────────────────────
+function parseChapters(text) {
+  const regex = /##\s+챕터\s*\d+\s*:\s*(.+?)\n([\s\S]*?)(?=##\s+챕터\s*\d+\s*:|$)/g;
+  const chapters = [];
+  let match;
+  while ((match = regex.exec(text)) !== null) {
+    const title = match[1].trim();
+    const body  = match[2].trim();
+    if (title && body) chapters.push({ title, body });
+  }
+  return chapters;
+}
+
+function parseSingleChapter(text, index) {
+  const regex = /##\s+챕터\s*\d+\s*:\s*(.+?)\n([\s\S]*)/;
+  const match = regex.exec(text.trim());
+  if (match) {
+    return { title: match[1].trim(), body: match[2].trim() };
+  }
+  return { title: `챕터 ${index + 1}`, body: text.trim() };
+}
+
+// ──────────────────────────────────────────────
+//  Render
+// ──────────────────────────────────────────────
+function renderChapters() {
+  document.getElementById('displayTitle').textContent = state.title;
+  const container = document.getElementById('chaptersContainer');
+  container.innerHTML = '';
+  state.chapters.forEach((ch, i) => {
+    container.appendChild(createChapterCard(ch, i));
+  });
+}
+
+function createChapterCard(chapter, index) {
+  const card = document.createElement('div');
+  card.className = 'chapter-card';
+  card.id = `chapter-${index}`;
+
+  const header = document.createElement('div');
+  header.className = 'chapter-header';
+
+  const titleEl = document.createElement('div');
+  titleEl.className = 'chapter-title';
+  titleEl.textContent = `챕터 ${index + 1}: ${chapter.title}`;
+
+  const regenBtn = document.createElement('button');
+  regenBtn.className = 'btn-secondary';
+  regenBtn.textContent = '🔄 다시 써줘';
+  regenBtn.addEventListener('click', () => regenChapter(index));
+
+  header.appendChild(titleEl);
+  header.appendChild(regenBtn);
+
+  const body = document.createElement('div');
+  body.className = 'chapter-body';
+  body.textContent = chapter.body;
+
+  card.appendChild(header);
+  card.appendChild(body);
+  return card;
+}
+
+// ──────────────────────────────────────────────
+//  Generation flows
+// ──────────────────────────────────────────────
+async function startGeneration() {
+  if (!validate()) return;
+
+  document.getElementById('startBtn').disabled = true;
+  showScreen('loading');
+
+  try {
+    const text = await callGemini(buildPrompt());
+    state.chapters = parseChapters(text);
+
+    if (state.chapters.length === 0) throw new Error('parse');
+
+    renderChapters();
+    showScreen('result');
+  } catch (e) {
+    showScreen('setup');
+    handleApiError(e);
+  } finally {
+    document.getElementById('startBtn').disabled = false;
+  }
+}
+
+async function regenChapter(index) {
+  const card = document.getElementById(`chapter-${index}`);
+  if (!card) return;
+
+  const btn = card.querySelector('button');
+  btn.disabled = true;
+
+  const originalContent = card.innerHTML;
+  card.innerHTML = '<div class="chapter-regenerating">✨ 챕터를 다시 쓰고 있어요...</div>';
+
+  try {
+    const text = await callGemini(buildRegenPrompt(index));
+    state.chapters[index] = parseSingleChapter(text, index);
+    const newCard = createChapterCard(state.chapters[index], index);
+    card.replaceWith(newCard);
+    showToast('챕터를 새로 썼어요! ✨', 'success');
+  } catch (e) {
+    card.innerHTML = originalContent;
+    card.querySelector('button').disabled = false;
+    handleApiError(e);
+  }
+}
+
+function handleApiError(e) {
+  const msg = e.message;
+  if (msg === 'api_key') {
+    showError('API 키를 다시 확인해봐요 🔑');
+    showToast('API 키를 다시 확인해봐요 🔑', 'error');
+  } else if (msg === 'network' || e instanceof TypeError) {
+    showError('인터넷 연결을 확인해봐요 📡');
+    showToast('인터넷 연결을 확인해봐요 📡', 'error');
+  } else {
+    showError('다시 시도해봐요! ✨');
+    showToast('다시 시도해봐요! ✨', 'error');
+  }
+}
+
+function resetAll() {
+  if (!confirm('전체 동화를 다시 만들까요?')) return;
+  state.chapters = [];
+  startGeneration();
+}
+
+function goBack() {
+  showScreen('setup');
+}
+
+// ──────────────────────────────────────────────
+//  PDF Save
+// ──────────────────────────────────────────────
+async function savePDF() {
+  const pdfBtn = document.getElementById('pdfBtn');
+  pdfBtn.disabled = true;
+  pdfBtn.textContent = '📄 PDF 만드는 중...';
+
+  try {
+    // Build hidden render area
+    const pdfArea = document.getElementById('pdfContent');
+    let html = `<div class="pdf-main-title">${escapeHtml(state.title)}</div>`;
+    state.chapters.forEach((ch, i) => {
+      html += `<div class="pdf-chapter-title">챕터 ${i+1}: ${escapeHtml(ch.title)}</div>`;
+      html += `<div class="pdf-chapter-body">${escapeHtml(ch.body)}</div>`;
+      if (i < state.chapters.length - 1) html += '<hr class="pdf-divider" />';
+    });
+    pdfArea.innerHTML = html;
+
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+
+    const pageW = pdf.internal.pageSize.getWidth();
+    const pageH = pdf.internal.pageSize.getHeight();
+    const margin = 15;
+    const contentW = pageW - margin * 2;
+
+    // Render to canvas in chunks (html2canvas)
+    const canvas = await html2canvas(pdfArea, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: '#ffffff',
+      width: 800,
+      windowWidth: 800
+    });
+
+    const imgData = canvas.toDataURL('image/jpeg', 0.92);
+    const imgW = contentW;
+    const imgH = (canvas.height * imgW) / canvas.width;
+
+    let yOffset = 0;
+    let remainingH = imgH;
+    let isFirstPage = true;
+
+    while (remainingH > 0) {
+      if (!isFirstPage) pdf.addPage();
+      const availH = pageH - margin * 2;
+      const sliceH = Math.min(availH, remainingH);
+
+      // Calculate source rect in canvas pixels
+      const srcY = (yOffset / imgH) * canvas.height;
+      const srcH = (sliceH / imgH) * canvas.height;
+
+      // Create slice canvas
+      const sliceCanvas = document.createElement('canvas');
+      sliceCanvas.width = canvas.width;
+      sliceCanvas.height = srcH;
+      const ctx = sliceCanvas.getContext('2d');
+      ctx.drawImage(canvas, 0, srcY, canvas.width, srcH, 0, 0, canvas.width, srcH);
+      const sliceData = sliceCanvas.toDataURL('image/jpeg', 0.92);
+
+      pdf.addImage(sliceData, 'JPEG', margin, margin, imgW, sliceH);
+
+      yOffset += sliceH;
+      remainingH -= sliceH;
+      isFirstPage = false;
+    }
+
+    const fileName = state.title.replace(/\s+/g, '_').replace(/[^\w가-힣_]/g, '') + '.pdf';
+    pdf.save(fileName);
+
+    showToast('저장됐어요! 📖', 'success');
+  } catch (err) {
+    showToast('PDF 저장에 실패했어요. 다시 시도해봐요!', 'error');
+    console.error(err);
+  } finally {
+    pdfBtn.disabled = false;
+    pdfBtn.textContent = '📄 PDF로 저장하기';
+  }
+}
+
+function escapeHtml(str) {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+</script>
+</body>
+</html>
